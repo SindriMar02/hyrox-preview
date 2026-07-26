@@ -1,0 +1,9 @@
+node_modules/
+dist/
+qa/shots/
+qa/walk/
+qa/*.png
+qa/*.jpg
+qa/report.txt
+qa/a11y.txt
+.DS_Store
