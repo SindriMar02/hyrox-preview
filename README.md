@@ -47,8 +47,20 @@ The newest asset on their site was 7 months old, so this was checked first:
 - Their **Strivee** plan „Hyrox Iceland - Prufuvika" is live and subscribable.
 - ISNIC: registrant `AHK29-IS`, created 18 Mar 2024, **expires 18 Mar 2027**.
 - Live MX on 1984.is. IG `@hyroxiceland`, TikTok `@almahkara`.
-- Alma's listed contact is `Alma@crossfitreykjavik.is`; she coaches at
-  CrossFit Reykjavík.
+- Alma is the sole listed owner and board member of **ÓA Active slf.**
+  (kt. 6603250420, reg. 10.02.2025, Grensásvegi 1D, ÍSAT 85.51.0), which the
+  about page names as the owner of Hyrox Iceland.
+
+**Ownership, checked properly 2026-07-26.** Her own page says she is
+**stöðvarstjóri at CrossFit Sport**, which is **Sporthúsið's** CrossFit gym in
+Kópavogur (`sporthusid.is/crossfit`), and that she designed the Hyrox Sport
+course there. She has **no ownership link to CrossFit Reykjavík**: that is
+**CFR ehf.** (kt. 590410-0550, reg. 06.04.2010, Faxafeni 12), chairman
+**Arnar Þorsteinsson**, and its domain sits on a different ISNIC handle
+(EV1107-IS vs Alma's AHK29-IS). An `Alma@crossfitreykjavik.is` address appears
+on the Hybrid Training Iceland Facebook page and is unexplained, most likely
+legacy; she is not named anywhere on crossfitreykjavik.is. **Do not describe
+her as a CrossFit Reykjavík coach.**
 
 Operating business, stale website.
 

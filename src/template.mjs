@@ -44,11 +44,15 @@ const levelPicker = (idPrefix, size = '') => `
 </div>`;
 
 const img = (name, alt, cls = '', extra = '') => {
+  /* Intrinsic dimensions, so nothing shifts while the image loads. The station
+     frames render at aspect-ratio 4/3, so their assets are 4:3 landscape at
+     1600x1200: a portrait asset in that frame threw away 44% of its pixels and
+     upscaled on any modern phone. */
   const sizes = { hero: [2000, 1125], lanes: [1800, 1000], grid: [1600, 900], ropes: [1400, 900],
-    markers: [1200, 1200], 'arch-burpees': [1200, 1500], 'arch-rowing': [1200, 1500],
+    markers: [1200, 1200], 'arch-rowing': [1200, 1500],
     'arch-sled': [1400, 900], community: [2000, 1000], finish: [1600, 1000],
-    coaches: [1100, 1375] };
-  const [w, h] = sizes[name] || [900, 1200];
+    coaches: [1440, 1800] };
+  const [w, h] = sizes[name] || [1600, 1200];
   return `<img src="img/${name}.webp" alt="${esc(alt)}" width="${w}" height="${h}" class="${cls}" ${extra}>`;
 };
 
@@ -90,6 +94,9 @@ ${noindex ? '<meta name="robots" content="noindex, nofollow">' : ''}
 <meta property="og:image" content="${esc(canonical.replace(/\/?$/, '/'))}img/hero.webp">
 <meta name="theme-color" content="#080D0C">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon-48.png" type="image/png" sizes="48x48">
+<link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preload" as="font" type="font/woff2" href="fonts/archivo-900.woff2" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="fonts/archivo-400.woff2" crossorigin>
 <link rel="preload" as="image" href="img/hero.webp" fetchpriority="high">
@@ -147,7 +154,7 @@ ${noindex ? '<meta name="robots" content="noindex, nofollow">' : ''}
     <div class="hero-copy">
       <p class="eyebrow">Fjarþjálfun sniðin að Hyrox</p>
       <h1 class="hero-h" data-split>${esc(QUIZ.question)}</h1>
-      <p class="hero-lede">${esc(QUIZ.lede)}</p>
+      <p class="hero-lede">${esc(QUIZ.lede)} <span class="hero-lede-b">${esc(QUIZ.ledeB)}</span></p>
     </div>
 
     <form class="quiz" id="quiz" novalidate>

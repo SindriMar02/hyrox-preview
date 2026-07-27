@@ -57,8 +57,11 @@ export const LEVELS = {
    on the free vikuprufa, never on a payment. */
 export const QUIZ = {
   question: 'Hvar ertu núna?',
-  lede: 'Þrjár spurningar og þú sérð nákvæmlega hvað þú færð. Engin greiðsla '
-      + 'og fyrsta vikan er frí.',
+  /* Two sentences, rendered as two spans. The second is repeated by the quiz
+     badge and by quiz-foot, so a short viewport can drop it without losing
+     any information. */
+  lede: 'Þrjár spurningar og þú sérð nákvæmlega hvað þú færð.',
+  ledeB: 'Engin greiðsla og fyrsta vikan er frí.',
   badge: 'Frí vikuprufa',
   cta: 'Sjá mína leið',
   reset: 'Byrja upp á nýtt',

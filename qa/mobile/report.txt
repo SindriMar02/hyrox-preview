@@ -1,0 +1,31 @@
+HYROX mobile audit  2026-07-26T11:24
+target: http://localhost:8795/
+devices: iphone-se 375x667@2 | iphone-14 390x844@3 | iphone-max 430x932@3 | android-mid 360x800@3 | inapp-gmail 390x720@3 | landscape 844x390@3 | tablet 768x1024@2
+FAIL (1)
+  [landscape] images upscaled past 1.3x: [{"src":"hero.webp","r":1.34},{"src":"grid.webp","r":1.58},{"src":"finish.webp","r":1.58}]
+WARN (4)
+  [iphone-se] hero 708px taller than viewport 667px
+  [android-mid] hero 833px taller than viewport 800px
+  [landscape] long measure: [{"c":"quiz-foot","chars":85},{"c":"wd","chars":101},{"c":"wd","chars":101},{"c":"wd","chars":101},{"c":"wd","chars":101},{"c":"wd","chars":101},{"c":"wd","char
+  [tablet] long measure: [{"c":"quiz-foot","chars":83},{"c":"wd","chars":92},{"c":"wd","chars":92},{"c":"wd","chars":92},{"c":"wd","chars":92},{"c":"wd","chars":92},{"c":"wd","chars":92
+INFO (20)
+  transfer 0 KB total :: text/html 0KB, text/css 0KB, image/webp 0KB, font/woff2 0KB, text/javascript 0KB
+  LCP 252 ms @390 (throttling off)
+  iphone-se 375x667@2: hero 708/667, submit bottom 636
+  iphone-se funnel: OK, chip OPEN, trial CTA 297x58
+  iphone-se sticky bar 74px, button 51px, hides over signup and footer
+  iphone-14 390x844@3: hero 844/844, submit bottom 756
+  iphone-14 funnel: OK, chip OPEN, trial CTA 312x58
+  iphone-14 sticky bar 74px, button 51px, hides over signup and footer
+  iphone-max 430x932@3: hero 932/932, submit bottom 844
+  iphone-max sticky bar 74px, button 51px, hides over signup and footer
+  android-mid 360x800@3: hero 833/800, submit bottom 745
+  android-mid sticky bar 74px, button 51px, hides over signup and footer
+  inapp-gmail 390x720@3: hero 720/720, submit bottom 648
+  inapp-gmail funnel: OK, chip OPEN, trial CTA 312x58
+  inapp-gmail sticky bar 74px, button 51px, hides over signup and footer
+  landscape 844x390@3: hero 744/390, submit bottom 675
+  landscape sticky bar 74px, button 51px, hides over signup and footer
+  tablet 768x1024@2: hero 1024/1024, submit bottom 932
+  tablet sticky bar 74px, button 51px, hides over signup and footer
+  reduced motion @390: 54 blocks all visible, frame open, no overflow

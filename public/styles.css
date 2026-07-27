@@ -173,7 +173,7 @@ button { font: inherit; color: inherit; }
 
 .chip {
   display: flex; align-items: baseline; gap: .5rem;
-  min-height: 40px; padding: .35rem .8rem;
+  min-height: 44px; padding: .35rem .8rem;
   background: transparent; border: 1px solid var(--hx-line); border-radius: 2px;
   cursor: pointer; transition: border-color .2s;
 }
@@ -210,15 +210,21 @@ html[data-level] .chip.is-set { border-color: var(--hx-volt-d); }
 .mmenu {
   position: fixed; inset: 0; z-index: 80;
   display: flex; flex-direction: column; justify-content: center; gap: 2rem;
-  padding: 6rem var(--hx-pad) 2rem;
+  padding: 5.5rem var(--hx-pad) 1.5rem;
   background: var(--hx-ground);
+  overflow-y: auto; overscroll-behavior: contain;
   opacity: 0; transition: opacity .3s ease;
+}
+@media (max-height: 520px) {
+  .mmenu { justify-content: flex-start; gap: 1.1rem; }
+  .mmenu-foot { flex-direction: row; flex-wrap: wrap; align-items: center; gap: .7rem; }
 }
 .mmenu[hidden] { display: none; }
 .mmenu.is-open { opacity: 1; }
 .mmenu-nav { display: flex; flex-direction: column; gap: .2rem; }
 .mmenu-nav a {
-  font-size: clamp(2rem, 9vw, 3rem); font-weight: 900; line-height: 1.2;
+  /* 9vw alone blows past a 390px-tall landscape viewport with five items */
+  font-size: clamp(1.35rem, min(9vw, 7.2vh), 3rem); font-weight: 900; line-height: 1.18;
   text-transform: uppercase; text-decoration: none; letter-spacing: -.01em;
   opacity: 0; transform: translateY(14px);
   transition: opacity .4s ease, transform .4s cubic-bezier(.2,.7,.2,1);
@@ -261,7 +267,7 @@ html[data-level] .chip.is-set { border-color: var(--hx-volt-d); }
 .hero-lede { margin: 0; max-width: 46ch; font-size: var(--hx-lede); color: #C3CBC7; }
 .hero-cred {
   position: absolute; left: var(--hx-pad); bottom: 1rem; margin: 0;
-  font-size: .68rem; letter-spacing: .12em; text-transform: uppercase; color: var(--hx-dim2);
+  font-size: .75rem; letter-spacing: .1em; text-transform: uppercase; color: var(--hx-dim2);
 }
 
 /* the quiz card */
@@ -725,7 +731,10 @@ body.is-intro .hdr, body.is-intro .hero-copy > *, body.is-intro .quiz, body.is-i
 .ft-mark .wm { height: 22px; }
 .ft-t { margin: 0; font-size: .92rem; color: var(--hx-dim); max-width: 34ch; }
 .ft-h { margin: 0 0 .7rem; font-size: .7rem; letter-spacing: .16em; text-transform: uppercase; color: var(--hx-dim2); }
-.ft-b a { display: block; margin-bottom: .4rem; font-size: .92rem; color: var(--hx-dim); text-underline-offset: 3px; }
+.ft-b a {
+  display: flex; align-items: center; min-height: 44px;
+  font-size: .92rem; color: var(--hx-dim); text-underline-offset: 3px;
+}
 .ft-b a:hover { color: var(--hx-volt); }
 .ft-c p { margin: 0 0 .5rem; font-size: .86rem; color: var(--hx-dim); }
 .ft-note { color: var(--hx-dim2) !important; font-size: .8rem !important; }
@@ -749,7 +758,7 @@ body.is-intro .hdr, body.is-intro .hero-copy > *, body.is-intro .quiz, body.is-i
   transform: scaleX(var(--p, .25)); transform-origin: left;
   transition: transform .55s cubic-bezier(.2,.7,.2,1);
 }
-.quiz-foot { margin: .8rem 0 0; font-size: .74rem; color: var(--hx-dim2); text-align: center; }
+.quiz-foot { margin: .8rem 0 0; font-size: .78rem; color: var(--hx-dim2); text-align: center; }
 
 /* ---------- the wizard (steps 2 to 4) ---------- */
 .wiz[hidden], .wstep[hidden] { display: none; }
@@ -841,7 +850,7 @@ body.is-intro .hdr, body.is-intro .hero-copy > *, body.is-intro .quiz, body.is-i
 
 /* ---------- race instrumentation ---------- */
 .stcount {
-  position: sticky; top: 68px; z-index: 40;
+  position: sticky; top: var(--hx-sticktop, 84px); z-index: 40;
   display: flex; align-items: center; gap: .7rem;
   width: min(var(--hx-wrap), 100%); margin-inline: auto;
   padding: .5rem var(--hx-pad) 0;
@@ -905,6 +914,26 @@ body.is-intro .hdr, body.is-intro .hero-copy > *, body.is-intro .quiz, body.is-i
 .hdr.is-away { --hdy: -110%; }
 
 /* ================= BREAKPOINTS ================= */
+/* SHORT VIEWPORTS: the funnel entry point has to be usable without scrolling,
+   which is the case that matters most since the link arrives by email and gets
+   opened in an in-app browser with reduced height. */
+@media (max-height: 780px) and (max-width: 900px) {
+  .hero { padding-top: 4.25rem; padding-bottom: 1.6rem; }
+  .hero-h { font-size: clamp(2rem, 6.4vw, 3.2rem); }
+  .hero-copy .eyebrow { margin-bottom: .7rem; font-size: .72rem; }
+  .hero-h { margin-bottom: .7rem; }
+  /* repeated by the quiz badge and by quiz-foot, so nothing is lost */
+  .hero-lede-b { display: none; }
+  .hero-in { gap: 1.1rem; }
+  .quiz-fs { padding: .85rem; }
+  .quiz-head { margin-bottom: .55rem; }
+  .prog { margin-bottom: .8rem; }
+  .quiz-opts { gap: .35rem; margin-bottom: .75rem; }
+  .qo { min-height: 48px; padding: .45rem .75rem; }
+  .quiz-foot { margin-top: .55rem; }
+  .hero-cred { bottom: .5rem; }
+}
+
 /* the whole quiz must fit one small-phone viewport, submit button included */
 @media (max-width: 619px) {
   /* MIÐVIKUDAGUR and ÞRIÐJUDAGUR are far wider than the desktop day column */
@@ -919,7 +948,7 @@ body.is-intro .hdr, body.is-intro .hero-copy > *, body.is-intro .quiz, body.is-i
   .quiz-opts { gap: .4rem; margin-bottom: .9rem; }
   .qo { min-height: 52px; padding: .55rem .8rem; gap: .7rem; }
   .qo-l { font-size: .9rem; }
-  .hero-cred { font-size: .6rem; }
+  .hero-cred { font-size: .75rem; letter-spacing: .06em; }
 }
 
 @media (min-width: 620px) {
@@ -939,6 +968,15 @@ body.is-intro .hdr, body.is-intro .hero-copy > *, body.is-intro .quiz, body.is-i
   .gears { grid-template-columns: repeat(3, 1fr); }
 }
 
+@media (min-width: 760px) {
+  .stn { grid-template-columns: 1fr 1fr; }
+  .stn:nth-child(even) .stn-img { order: 2; }
+  .coach-in { grid-template-columns: 1.25fr .75fr; }
+  .res { grid-template-columns: 1.15fr .85fr; }
+  /* the week body was running to ~100 characters a line here */
+  .wd-text { max-width: 52ch; }
+}
+
 @media (min-width: 900px) {
   .hero { padding-bottom: 4rem; }
   .hero-in { grid-template-columns: 1fr minmax(420px, 520px); align-items: end; gap: 3rem; }
@@ -953,7 +991,10 @@ body.is-intro .hdr, body.is-intro .hero-copy > *, body.is-intro .quiz, body.is-i
   .stn-txt { padding-inline: clamp(0rem, 2vw, 2rem); }
 }
 
+:root { --hx-sticktop: 88px; }
+
 @media (min-width: 1060px) {
+  :root { --hx-sticktop: 70px; }
   .hdr-nav { display: flex; }
   .hdr-cta { display: inline-flex; }
   .burger { display: none; }
