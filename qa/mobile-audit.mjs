@@ -137,11 +137,9 @@ for (const d of DEVICES) {
       return { c: (e.className || e.tagName).toString().split(' ')[0], chars };
     }).filter((x) => x.chars > 78);
 
-    /* upscaled assets */
-    out.upscale = [...document.images].map((i) => ({
-      src: (i.currentSrc || '').split('/').pop(),
-      r: +((i.getBoundingClientRect().width * dpr) / (i.naturalWidth || 1)).toFixed(2),
-    })).filter((x) => x.r > 1.3);
+    /* upscaled assets are measured separately, after a priming sweep: everything
+       below the fold is loading=lazy, so at scroll 0 naturalWidth is still 0 and
+       the ratio would be the rendered width rather than an upscale factor */
 
     /* the marquee must not create a scrollbar */
     const mq = document.querySelector('.mq');
@@ -159,7 +157,26 @@ for (const d of DEVICES) {
   if (r1.spill.length) FAIL(d.name, `text spills its box: ${r1.spill.join(', ')}`);
   if (r1.small.length) FAIL(d.name, `tap targets under 44px: ${JSON.stringify(r1.small).slice(0, 200)}`);
   if (r1.tiny.length) FAIL(d.name, `type under 12px: ${JSON.stringify(r1.tiny)}`);
-  if (r1.upscale.length) FAIL(d.name, `images upscaled past 1.3x: ${JSON.stringify(r1.upscale)}`);
+  /* prime every lazy plate, measure the upscale ratios, then return to the top
+     so the checks below still see the page as a visitor first meets it */
+  const upscale = await p.evaluate(async (dpr) => {
+    const h = document.body.scrollHeight;
+    for (let y = 0; y < h; y += 500) { window.scrollTo(0, y); await new Promise((r) => setTimeout(r, 40)); }
+    await Promise.all([...document.images].map((i) => (i.complete ? null
+      : new Promise((r) => i.addEventListener('load', r, { once: true })))));
+    const out = {
+      unloaded: [...document.images].filter((i) => !i.naturalWidth).length,
+      over: [...document.images].map((i) => ({
+        src: (i.currentSrc || '').split('/').pop(),
+        r: +((i.getBoundingClientRect().width * dpr) / (i.naturalWidth || 1)).toFixed(2),
+      })).filter((x) => x.r > 1.3),
+    };
+    window.scrollTo(0, 0);
+    return out;
+  }, d.dpr);
+  await settle(700);
+  if (upscale.unloaded) FAIL(d.name, `${upscale.unloaded} images never decoded`);
+  if (upscale.over.length) FAIL(d.name, `images upscaled past 1.3x: ${JSON.stringify(upscale.over)}`);
   if (r1.longLines.length) WARN(d.name, `long measure: ${JSON.stringify(r1.longLines).slice(0, 160)}`);
   if (r1.mqClipped === false) FAIL(d.name, 'marquee is not clipped');
   if (r1.counterTop !== null && r1.counterTop < r1.hdrH - 4) {

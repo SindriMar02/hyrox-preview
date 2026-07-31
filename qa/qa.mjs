@@ -85,11 +85,6 @@ const domClick = (p, sel) => p.evaluate((s) => {
       noAlt: imgs.filter((i) => !i.hasAttribute('alt')).length,
       docH: document.documentElement.scrollHeight,
       overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-      /* upscale ratio: never blow an asset past its intrinsic pixels (ledger #64) */
-      upscale: imgs.map((i) => ({
-        src: i.currentSrc.split('/').pop(),
-        r: +((i.getBoundingClientRect().width * devicePixelRatio) / (i.naturalWidth || 1)).toFixed(2),
-      })).filter((x) => x.r > 1.25),
     };
   });
   ok('exactly one h1', s.h1n === 1, `found ${s.h1n}`);
@@ -97,7 +92,6 @@ const domClick = (p, sel) => p.evaluate((s) => {
   ok('no broken images', s.broken.length === 0, s.broken.join(','));
   ok('every image has alt', s.noAlt === 0, `${s.noAlt} missing`);
   ok('no horizontal overflow @1440', s.overflow <= 0, `${s.overflow}px`);
-  ok('no image upscaled past 1.25x', s.upscale.length === 0, JSON.stringify(s.upscale));
   info(`sections: ${s.sections} (${s.sectionIds.join(', ')})`);
   info(`page height ${s.docH}px, ${s.imgs} images`);
 
@@ -109,6 +103,24 @@ const domClick = (p, sel) => p.evaluate((s) => {
     window.scrollTo(0, 0);
   });
   await settle(900);
+
+  /* Upscale ratio: never blow an asset past its intrinsic pixels (ledger #64).
+     This has to come AFTER the sweep. Everything below the fold is loading=lazy,
+     so at scroll 0 naturalWidth is still 0 and the ratio is meaningless. */
+  const up = await p.evaluate(async () => {
+    const imgs = [...document.images];
+    await Promise.all(imgs.map((i) => (i.complete ? null
+      : new Promise((r) => i.addEventListener('load', r, { once: true })))));
+    return {
+      unloaded: imgs.filter((i) => !i.naturalWidth).length,
+      over: imgs.map((i) => ({
+        src: i.currentSrc.split('/').pop(),
+        r: +((i.getBoundingClientRect().width * devicePixelRatio) / (i.naturalWidth || 1)).toFixed(2),
+      })).filter((x) => x.r > 1.25),
+    };
+  });
+  ok('every image actually decoded after a full sweep', up.unloaded === 0, `${up.unloaded} never loaded`);
+  ok('no image upscaled past 1.25x', up.over.length === 0, JSON.stringify(up.over));
   await p.screenshot({ path: join(OUT, 'desktop-full.png'), fullPage: true });
   await p.close();
 }
@@ -297,13 +309,29 @@ const domClick = (p, sel) => p.evaluate((s) => {
     Math.abs(c.rv - a.rv) < 0.02 && c.rv < b.rv - 0.05, `${a.rv} -> ${b.rv} -> ${c.rv}`);
   info(`reveal round trip ${a.rv} / ${b.rv} / ${c.rv}`);
 
-  /* frame rate over a real sweep */
+  /* Frame rate over a real sweep. This measures the rAF loop, so every image is
+     primed first: below the fold they are all loading=lazy now, and a sweep that
+     outruns Chrome's lazy margin would otherwise be timing first-visit image
+     decode instead of the motion system. */
+  await p.evaluate(async () => {
+    const h = document.body.scrollHeight;
+    for (let y = 0; y < h; y += 600) { window.scrollTo(0, y); await new Promise((r) => setTimeout(r, 40)); }
+    await Promise.all([...document.images].map((i) => (i.complete ? null
+      : new Promise((r) => i.addEventListener('load', r, { once: true })))));
+    window.scrollTo(0, 0);
+  });
+  await settle(500);
   const perf = await p.evaluate(async () => {
-    let long = 0;
-    const po = new PerformanceObserver((l) => { long += l.getEntries().length; });
+    const tasks = [];
+    const t0 = performance.now();
+    const po = new PerformanceObserver((l) => {
+      for (const e of l.getEntries()) {
+        tasks.push(`${Math.round(e.duration)}ms @${Math.round(e.startTime - t0)}`
+          + (e.attribution || []).map((x) => ` ${x.name}`).join(''));
+      }
+    });
     po.observe({ entryTypes: ['longtask'] });
     let frames = 0;
-    const t0 = performance.now();
     const tick = () => { frames++; if (performance.now() - t0 < 3000) requestAnimationFrame(tick); };
     requestAnimationFrame(tick);
     const h = document.body.scrollHeight;
@@ -313,11 +341,67 @@ const domClick = (p, sel) => p.evaluate((s) => {
     }
     await new Promise((r) => setTimeout(r, 200));
     po.disconnect();
-    return { fps: +(frames / 3).toFixed(1), long };
+    return { fps: +(frames / 3).toFixed(1), long: tasks.length, tasks };
   });
   ok('60fps over a full-page sweep', perf.fps >= 50, `${perf.fps} fps`);
-  ok('no long tasks during sweep', perf.long === 0, `${perf.long} long tasks`);
-  info(`sweep: ${perf.fps} fps, ${perf.long} long tasks`);
+  ok('no long tasks during sweep', perf.long === 0, perf.tasks.join(', '));
+  info(`sweep: ${perf.fps} fps, ${perf.long} long tasks${perf.long ? ' [' + perf.tasks.join(', ') + ']' : ''}`);
+  await p.close();
+}
+
+/* ---------------- 3a. the load sequence ------------------------------------
+   The regression this exists to catch: the intro used to be applied by app.js.
+   app.js is deferred and queued behind 2.9 MB of eager images, so on a throttled
+   connection it ran EIGHT SECONDS after first paint. A visitor watched the hero
+   paint full bleed and readable, then snap backwards into a small inset frame
+   with the header gone, and only then play the opening. Measured 2026-07-31.
+
+   Two properties are asserted, neither of them about how it looks: the frame is
+   already closed on the first paint, and the whole intro still resolves if
+   app.js never arrives at all. If both hold, no network condition can reorder
+   the opening, because no script step is in the path. */
+{
+  const p = await newPage(1440, 900);
+  await p.setRequestInterception(true);
+  p.on('request', (r) => (/\/app\.js(\?|$)/.test(r.url()) ? r.abort() : r.continue()));
+  await p.goto(URL_, { waitUntil: 'domcontentloaded' });
+
+  await settle(120);
+  const early = await p.evaluate(() => ({
+    html: document.documentElement.className,
+    clip: getComputedStyle(document.querySelector('.hero-bg')).clipPath,
+  }));
+  await settle(2400);
+  const late = await p.evaluate(() => ({
+    clip: getComputedStyle(document.querySelector('.hero-bg')).clipPath,
+    hdr: +getComputedStyle(document.querySelector('.hdr')).opacity,
+    h1: +getComputedStyle(document.querySelector('.hero-h')).opacity,
+    quiz: +getComputedStyle(document.querySelector('.quiz')).opacity,
+    cred: +getComputedStyle(document.querySelector('.hero-cred')).opacity,
+  }));
+  ok('load: the frame is closed without app.js, i.e. before first paint',
+    /hx-open/.test(early.html) && /inset\(/.test(early.clip) && early.clip !== 'none',
+    `html "${early.html}" :: ${early.clip.slice(0, 40)}`);
+  ok('load: the intro completes with app.js blocked',
+    (late.clip === 'none' || /inset\(0/.test(late.clip))
+      && late.hdr > .95 && late.h1 > .95 && late.quiz > .95 && late.cred > .95,
+    JSON.stringify(late));
+  await p.close();
+}
+{
+  /* and the reason app.js was starved in the first place */
+  const p = await newPage(1440, 900);
+  await p.goto(URL_, { waitUntil: 'domcontentloaded' });
+  const imgs = await p.evaluate(() => [...document.querySelectorAll('img')].map((i) => ({
+    src: i.getAttribute('src'),
+    lazy: i.getAttribute('loading') === 'lazy',
+    prio: i.getAttribute('fetchpriority'),
+  })));
+  const eager = imgs.filter((i) => !i.lazy);
+  ok('load: only the hero is eager', eager.length === 1 && /hero\.webp$/.test(eager[0].src),
+    eager.map((i) => i.src).join(', '));
+  ok('load: the hero declares its priority', eager[0] && eager[0].prio === 'high', String(eager[0] && eager[0].prio));
+  info(`images: ${imgs.length}, eager ${eager.length}, lazy ${imgs.length - eager.length}`);
   await p.close();
 }
 
@@ -330,13 +414,13 @@ const domClick = (p, sel) => p.evaluate((s) => {
   await settle(120);
   const introEarly = await p.evaluate(() => {
     const bg = document.querySelector('.hero-bg');
-    return { cls: document.body.className, clip: getComputedStyle(bg).clipPath };
+    return { cls: document.documentElement.className, clip: getComputedStyle(bg).clipPath };
   });
   await settle(2200);
   const introDone = await p.evaluate(() => {
     const bg = document.querySelector('.hero-bg');
     return {
-      cls: document.body.className,
+      cls: document.documentElement.className,
       clip: getComputedStyle(bg).clipPath,
       hdr: +getComputedStyle(document.querySelector('.hdr')).opacity,
       h1: +getComputedStyle(document.querySelector('.hero-h')).opacity,
@@ -351,7 +435,7 @@ const domClick = (p, sel) => p.evaluate((s) => {
   ok('intro: never locks scroll', introDone.scrollLocked === false);
   ok('intro: header, headline and quiz all land visible',
     introDone.hdr > .95 && introDone.h1 > .95 && introDone.quiz > .95, JSON.stringify(introDone));
-  ok('intro: classes clean up', !/is-intro|intro-run/.test(introDone.cls), introDone.cls);
+  ok('intro: classes clean up', !/hx-open/.test(introDone.cls), `"${introDone.cls}"`);
 
   /* split-line headings */
   const split = await p.evaluate(() => {

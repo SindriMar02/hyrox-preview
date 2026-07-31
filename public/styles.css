@@ -492,18 +492,24 @@ html[data-level] .chip.is-set { border-color: var(--hx-volt-d); }
 /* ---------- the frame opens (intro) ---------- */
 /* The reference opens with the hero photo inset in a frame that expands to full
    bleed. Same idea, 1.5s instead of 5, no scroll lock, no keyboard trap, and
-   the whole thing is skipped outright under reduced motion. */
-.hero-bg {
-  clip-path: inset(var(--hx-frame, 0%) round var(--hx-frameR, 0px));
+   the whole thing is skipped outright under reduced motion.
+   `hx-open` is set on <html> by an inline head script, so the frame is already
+   closed on the very first paint. Everything below is a keyframe with
+   `animation-fill-mode: both`, which means the closed state IS the pre-delay
+   fill: there is no separate "hidden" class for a late script to remove, and
+   every animation resolves to the element's ordinary resting style. */
+@keyframes hx-frame-open {
+  from { clip-path: inset(12% 8% round 4px); }
+  to   { clip-path: inset(0% 0% round 0px); }
 }
-body.is-intro .hero-bg { --hx-frame: 12% 8%; --hx-frameR: 4px; }
-body.is-intro .hero-img { transform: scale(1.16); }
-body.intro-run .hero-bg {
-  transition: clip-path 1.25s cubic-bezier(.66,0,.16,1);
-  --hx-frame: 0%; --hx-frameR: 0px;
+/* both ends carry the parallax offset so the hero keeps tracking scroll if the
+   visitor moves during the open */
+@keyframes hx-frame-zoom {
+  from { transform: scale(1.16) translateY(var(--hx-heroY, 0px)); }
+  to   { transform: scale(1.06) translateY(var(--hx-heroY, 0px)); }
 }
-body.intro-run .hero-img { transition: transform 1.6s cubic-bezier(.66,0,.16,1); transform: scale(1.06); }
-body.is-intro .hdr, body.is-intro .hero-copy > *, body.is-intro .quiz, body.is-intro .hero-cred { opacity: 0; }
+html.hx-open .hero-bg  { animation: hx-frame-open 1.25s cubic-bezier(.66,0,.16,1) both; }
+html.hx-open .hero-img { animation: hx-frame-zoom 1.6s cubic-bezier(.66,0,.16,1) both; }
 
 /* ---------- 6 & 8. PUNCH SECTIONS ---------- */
 .punch { background: var(--hx-volt); color: #06100D; padding: var(--hx-sec) 0; }
@@ -1032,25 +1038,19 @@ body.is-intro .hdr, body.is-intro .hero-copy > *, body.is-intro .quiz, body.is-i
 .quiz.is-nudge .quiz-opts { animation: hx-nudge .42s cubic-bezier(.36,.07,.19,.97); }
 .quiz.is-nudge .qo { border-color: var(--hx-volt-d); }
 
-/* hero entrance: time-based, never scroll-gated, so it can never trap content
-   invisible in a throttled tab */
-body.is-loading .hero-copy > *, body.is-loading .quiz { opacity: 0; }
-/* hero entrance is TIME based, never scroll gated, so a throttled tab can never
-   trap it invisible */
-body.intro-run .hdr { animation: hx-fade-up .7s ease .62s both; }
-body.intro-run .hero-copy > * { animation: hx-fade-up .85s cubic-bezier(.2,.7,.2,1) both; }
-body.intro-run .hero-copy .eyebrow { animation-delay: .60s; }
-body.intro-run .hero-copy .hero-h  { animation-delay: .68s; }
-body.intro-run .hero-copy .hero-lede { animation-delay: .80s; }
-body.intro-run .quiz { animation: hx-fade-up .9s cubic-bezier(.2,.7,.2,1) .86s both; }
-body.intro-run .hero-cred { animation: hx-fade-up .6s ease 1.1s both; }
+/* Hero entrance. TIME based, never scroll gated, so a throttled tab can never
+   trap it invisible, and `both` fill means the hidden state exists only while
+   the animation is pending. Without `hx-open` these elements simply have their
+   ordinary styles: nothing anywhere sets the hero to opacity 0 on its own. */
+html.hx-open .hdr { animation: hx-fade-up .7s ease .62s both; }
+html.hx-open .hero-copy > * { animation: hx-fade-up .85s cubic-bezier(.2,.7,.2,1) both; }
+html.hx-open .hero-copy .eyebrow { animation-delay: .60s; }
+html.hx-open .hero-copy .hero-h  { animation-delay: .68s; }
+html.hx-open .hero-copy .hero-lede { animation-delay: .80s; }
+html.hx-open .quiz { animation: hx-fade-up .9s cubic-bezier(.2,.7,.2,1) .86s both; }
+html.hx-open .hero-cred { animation: hx-fade-up .6s ease 1.1s both; }
 /* the split lines of the h1 ride the same clock */
-body.intro-run .hero-h.is-in .ln-i { transition-delay: calc(.72s + var(--l) * 90ms); }
-/* no JS and no intro: everything is simply present */
-body:not(.is-intro):not(.intro-run) .hero-copy > *,
-body:not(.is-intro):not(.intro-run) .quiz,
-body:not(.is-intro):not(.intro-run) .hdr,
-body:not(.is-intro):not(.intro-run) .hero-cred { opacity: 1; animation: none; }
+html.hx-open .hero-h.is-in .ln-i { transition-delay: calc(.72s + var(--l) * 90ms); }
 
 @media (prefers-reduced-motion: reduce) {
   /* everything renders in its resting state; no scroll-driven values are used */
@@ -1059,14 +1059,12 @@ body:not(.is-intro):not(.intro-run) .hero-cred { opacity: 1; animation: none; }
     transform: none !important; filter: none !important;
     -webkit-mask-image: none !important; mask-image: none !important;
   }
-  .hero-img { transform: scale(1.02) !important; transition: none !important; }
-  .hero-bg { clip-path: none !important; transition: none !important; }
-  body.is-intro .hdr, body.is-intro .hero-copy > *, body.is-intro .quiz,
-  body.is-intro .hero-cred { opacity: 1 !important; }
-  body.intro-run .hdr, body.intro-run .hero-copy > *, body.intro-run .quiz,
-  body.intro-run .hero-cred { animation: none !important; opacity: 1 !important; }
-  body.is-loading .hero-copy > *, body.is-loading .quiz { opacity: 1; }
-  body:not(.is-loading) .hero-copy > *, body:not(.is-loading) .quiz { animation: none; }
+  /* the head script does not set hx-open under reduced motion; these are the
+     belt-and-braces for a preference that flips after the class was set */
+  .hero-img { transform: scale(1.02) !important; animation: none !important; }
+  .hero-bg { clip-path: none !important; animation: none !important; }
+  html.hx-open .hdr, html.hx-open .hero-copy > *, html.hx-open .quiz,
+  html.hx-open .hero-cred { animation: none !important; opacity: 1 !important; }
   .mmenu, .mmenu-nav a { transition: none; }
   .mmenu-nav a { opacity: 1; transform: none; }
   /* the reversing marquee, ken burns and the split-line masks all stop */
@@ -1083,11 +1081,9 @@ body:not(.is-intro):not(.intro-run) .hero-cred { opacity: 1; animation: none; }
 }
 
 /* No JS: the level state never resolves, so show every level side by side and
-   make sure nothing is left hidden. Target the class, not a bare body rule, so
-   this cannot lose a specificity fight with .is-loading. */
+   make sure nothing is left hidden. The intro cannot run here either, because
+   the inline head script that sets hx-open never executes. */
 @media (scripting: none) {
-  body.is-loading .hero-copy > *, body.is-loading .quiz { opacity: 1; }
-  .hero-bg { clip-path: none !important; }
   .quiz-go { display: none; }
   .wlv, .closer-lv { display: block !important; }
   .chip, .burger, .stcount, .stickybar { display: none; }

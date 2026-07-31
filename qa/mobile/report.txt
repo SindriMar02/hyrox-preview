@@ -1,4 +1,4 @@
-HYROX mobile audit  2026-07-26T11:24
+HYROX mobile audit  2026-07-31T14:49
 target: http://localhost:8795/
 devices: iphone-se 375x667@2 | iphone-14 390x844@3 | iphone-max 430x932@3 | android-mid 360x800@3 | inapp-gmail 390x720@3 | landscape 844x390@3 | tablet 768x1024@2
 FAIL (1)
@@ -10,7 +10,7 @@ WARN (4)
   [tablet] long measure: [{"c":"quiz-foot","chars":83},{"c":"wd","chars":92},{"c":"wd","chars":92},{"c":"wd","chars":92},{"c":"wd","chars":92},{"c":"wd","chars":92},{"c":"wd","chars":92
 INFO (20)
   transfer 0 KB total :: text/html 0KB, text/css 0KB, image/webp 0KB, font/woff2 0KB, text/javascript 0KB
-  LCP 252 ms @390 (throttling off)
+  LCP 272 ms @390 (throttling off)
   iphone-se 375x667@2: hero 708/667, submit bottom 636
   iphone-se funnel: OK, chip OPEN, trial CTA 297x58
   iphone-se sticky bar 74px, button 51px, hides over signup and footer

@@ -19,19 +19,19 @@
   const reduceQ = matchMedia('(prefers-reduced-motion: reduce)');
 
   const body = document.body;
-  body.classList.remove('is-loading');
 
   /* ---- the frame opens ----------------------------------------------
-     The reference locks scroll for about five seconds with cursor:wait and
-     no keyboard. This does the same visual move in 1.5s, never blocks input,
-     and is skipped entirely under reduced motion or on a deep link. */
-  if (!reduceQ.matches && scrollY < 4 && !location.hash) {
-    body.classList.add('is-intro');
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      body.classList.remove('is-intro');
-      body.classList.add('intro-run');
-    }));
-    setTimeout(() => body.classList.remove('intro-run'), 2600);
+     The reference locks scroll for about five seconds with cursor:wait and no
+     keyboard. This does the same visual move in 1.5s and never blocks input.
+     The intro itself is not run from here: an inline script in <head> sets
+     `hx-open` on <html> before the first paint and CSS keyframes carry it,
+     because this file is deferred and arrives long after the page has painted.
+     All that is left to do is drop the class once the animations have settled,
+     so a resize-driven re-split of the h1 does not inherit the intro's
+     transition delays. Every animation ends on the element's resting style, so
+     removing the class is invisible, and never removing it is survivable. */
+  if (root.classList.contains('hx-open')) {
+    setTimeout(() => root.classList.remove('hx-open'), 2600);
   }
 
   /* ================================================================== *
@@ -698,8 +698,17 @@
     /* fonts and images change layout after first paint; re-measure when they land */
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { measure(); kick(); });
     addEventListener('load', () => { measure(); kick(); });
+    /* Coalesced, because the twelve lazy plates land in a burst WHILE the
+       visitor is scrolling and measure() is a forced layout over the whole
+       17000px page. One pass per burst instead of one per image: measured as
+       the difference between a long task mid-sweep and none. */
+    let remeasureT = 0;
+    const remeasureSoon = () => {
+      clearTimeout(remeasureT);
+      remeasureT = setTimeout(() => { measure(); kick(); }, 120);
+    };
     $$('img').forEach((im) => {
-      if (!im.complete) im.addEventListener('load', () => { measure(); kick(); }, { once: true });
+      if (!im.complete) im.addEventListener('load', remeasureSoon, { once: true });
     });
     measure();
     kick();

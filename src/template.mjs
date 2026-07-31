@@ -53,11 +53,19 @@ const img = (name, alt, cls = '', extra = '') => {
     'arch-sled': [1400, 900], community: [2000, 1000], finish: [1600, 1000],
     coaches: [1440, 1800] };
   const [w, h] = sizes[name] || [1600, 1200];
-  return `<img src="img/${name}.webp" alt="${esc(alt)}" width="${w}" height="${h}" class="${cls}" ${extra}>`;
+  /* Everything except the hero is lazy. Eager, the twelve below-fold plates are
+     2.7 MB queued ahead of app.js, and on anything slower than a desk cable the
+     script that owns the intro lands seconds after the page has already painted.
+     The hero opts out by declaring its own priority. */
+  const eager = /fetchpriority="high"/.test(extra);
+  const load = eager ? '' : ' loading="lazy" decoding="async"';
+  return `<img src="img/${name}.webp" alt="${esc(alt)}" width="${w}" height="${h}" class="${cls}"${load} ${extra}>`;
 };
 
 export function render({ noindex = false, previewOrigin = '' } = {}) {
-  const canonical = previewOrigin || 'https://hyrox.is/';
+  /* always directory form: the preview lives at /hyrox-preview/, and a canonical
+     without the slash points at a URL that only redirects */
+  const canonical = (previewOrigin || 'https://hyrox.is/').replace(/\/?$/, '/');
 
   const ld = {
     '@context': 'https://schema.org',
@@ -100,10 +108,27 @@ ${noindex ? '<meta name="robots" content="noindex, nofollow">' : ''}
 <link rel="preload" as="font" type="font/woff2" href="fonts/archivo-900.woff2" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="fonts/archivo-400.woff2" crossorigin>
 <link rel="preload" as="image" href="img/hero.webp" fetchpriority="high">
+<link rel="preload" as="script" href="app.js">
+<script>/* The frame opens. This one decision has to be made BEFORE the first
+   paint, so it lives here and not in app.js: a deferred script queues behind
+   the images, and on a real connection it used to land eight seconds after the
+   hero had already painted full bleed, which snapped the photo backwards into
+   its frame and re-hid a header the visitor had been looking at. From here on
+   the intro is pure CSS, so no script step can strand it half-played either. */
+(function () {
+  try {
+    if (location.hash) return;
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var nav = performance.getEntriesByType('navigation')[0];
+    if (nav && nav.type === 'back_forward') return; /* restored mid-page */
+    document.documentElement.classList.add('hx-open');
+  } catch (e) { /* no intro is always a valid outcome */ }
+})();
+</script>
 <link rel="stylesheet" href="styles.css">
 <script type="application/ld+json">${JSON.stringify(ld)}</script>
 </head>
-<body class="is-loading">
+<body>
 <a class="skip" href="#efni">Fara beint í efni</a>
 
 <header class="hdr" id="hdr">
