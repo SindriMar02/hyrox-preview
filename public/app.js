@@ -1,3 +1,14 @@
+/* focus-guard (_tools/focus-guard): no focus ring after a tap or click; the README says why */
+(function () {
+  var root = document.documentElement;
+  function set(v) { if (root.getAttribute('data-input') !== v) root.setAttribute('data-input', v); }
+  addEventListener('pointerdown', function () { set('pointer'); }, true);
+  addEventListener('keydown', function (e) {
+    if (e.key === 'Shift' || e.key === 'Control' || e.key === 'Alt' || e.key === 'Meta') return;
+    set('key');
+  }, true);
+})();
+
 /* hyrox.is — no framework, no smooth-scroll library.
  *
  * Two things live here:
